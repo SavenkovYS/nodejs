@@ -2,9 +2,9 @@ const path = require('path');
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 
 const errorController = require('./controllers/error');
-const mongoConnect = require('./util/database').mongoConnect;
 const User = require('./models/user');
 
 const app = express();
@@ -19,9 +19,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use((req, res, next) => {
-  User.findById('61b323a2165080b7c95e0e25')
+  User.findById('61b7700398cebc2b45f4c197')
     .then(user => {
-      req.user = new User(user.name, user.email, user.cart, user._id);
+      req.user = user;
       next();
     })
     .catch(err => console.log(err));
@@ -32,6 +32,23 @@ app.use(shopRoutes);
 
 app.use(errorController.get404);
 
-mongoConnect(() => {
-    app.listen(3000);
-});
+mongoose
+    .connect('mongodb+srv://savenkov:Cfdtyrjd1993@cluster0.rrnoz.mongodb.net/shop?authSource=admin&replicaSet=atlas-8ms4bn-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true')
+    .then(() => {
+        User
+            .findOne()
+            .then(user => {
+                if (!user) {
+                    const user = new User({
+                        name: 'Max',
+                        email: 'test@mail.ru',
+                        cart: {
+                            items: []
+                        }
+                    });
+                    user.save();
+                }
+        });
+        app.listen(3000);
+    })
+    .catch(err => console.log(err));
