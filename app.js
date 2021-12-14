@@ -14,12 +14,13 @@ app.set('views', 'views');
 
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
+const authRoutes = require('./routes/auth');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use((req, res, next) => {
-  User.findById('61b7700398cebc2b45f4c197')
+  User.findById('5bab316ce0a7c75f783cb8a8')
     .then(user => {
       req.user = user;
       next();
@@ -29,26 +30,27 @@ app.use((req, res, next) => {
 
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
+app.use(authRoutes);
 
 app.use(errorController.get404);
 
 mongoose
-    .connect('mongodb+srv://savenkov:Cfdtyrjd1993@cluster0.rrnoz.mongodb.net/shop?authSource=admin&replicaSet=atlas-8ms4bn-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true')
-    .then(() => {
-        User
-            .findOne()
-            .then(user => {
-                if (!user) {
-                    const user = new User({
-                        name: 'Max',
-                        email: 'test@mail.ru',
-                        cart: {
-                            items: []
-                        }
-                    });
-                    user.save();
-                }
+  .connect('mongodb+srv://savenkov:Cfdtyrjd1993@cluster0.rrnoz.mongodb.net/shop?authSource=admin&replicaSet=atlas-8ms4bn-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true')
+  .then(result => {
+    User.findOne().then(user => {
+      if (!user) {
+        const user = new User({
+          name: 'Max',
+          email: 'max@test.com',
+          cart: {
+            items: []
+          }
         });
-        app.listen(3000);
-    })
-    .catch(err => console.log(err));
+        user.save();
+      }
+    });
+    app.listen(3000);
+  })
+  .catch(err => {
+    console.log(err);
+  });
