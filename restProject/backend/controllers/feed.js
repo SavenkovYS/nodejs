@@ -22,6 +22,7 @@ exports.getPosts = (req, res, next) => {
 };
 
 exports.createPost = (req, res, next) => {
+    req.file.path = req.file.path.replace(/\\/g, '/');
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         const error = new Error('Validation failed');
