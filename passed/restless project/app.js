@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs')
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -8,11 +9,14 @@ const MongoDBStore = require('connect-mongodb-session')(session);
 const csrf = require('csurf');
 const flash = require('connect-flash');
 const multer = require('multer');
+const helmet = require('helmet');
+const compression = require('compression');
+const morgan = require('morgan');
 
 const errorController = require('./controllers/error');
 const User = require('./models/user');
 
-const MONGODB_URI = 'mongodb+srv://savenkov:Cfdtyrjd1993@cluster0.rrnoz.mongodb.net/shop?authSource=admin&replicaSet=atlas-8ms4bn-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true'
+const MONGODB_URI = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.rrnoz.mongodb.net/${process.env.MONGO_BASE_NAME}?authSource=admin&replicaSet=atlas-8ms4bn-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true`
 
 const app = express();
 const store = new MongoDBStore({
@@ -49,6 +53,15 @@ app.set('views', 'views');
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
 const authRoutes = require('./routes/auth');
+
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, 'access.log'),
+  { flags: 'a' }
+)
+
+app.use(helmet());
+app.use(compression());
+app.use(morgan('combined', { stream: accessLogStream }));
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(multer({ storage: fileStorage, fileFilter(req, file, callback) {
@@ -107,7 +120,7 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(MONGODB_URI)
   .then(result => {
-    app.listen(3000);
+    app.listen(process.env.PORT || 3000);
   })
   .catch(err => {
     console.log(err);
