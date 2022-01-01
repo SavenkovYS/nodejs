@@ -4,12 +4,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const multer = require('multer');
-const { graphqlHTTP } = require('express-graphql');
 
-const graphqlSchema = require('./graphql/schema');
-const graphqlResolver = require('./graphql/resolvers');
-const auth = require('./middleware/auth');
-const { clearImage } = require('./util/file')
+const feedRoutes = require('./routes/feed');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 
@@ -18,7 +15,7 @@ const fileStorage = multer.diskStorage({
     cb(null, 'images');
   },
   filename: (req, file, cb) => {
-    cb(null, file.originalname);
+    cb(null, new Date().toISOString() + '-' + file.originalname);
   }
 });
 
@@ -48,46 +45,11 @@ app.use((req, res, next) => {
     'OPTIONS, GET, POST, PUT, PATCH, DELETE'
   );
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
   next();
 });
 
-app.use(auth);
-
-app.put('/post-image', (req, res, next) => {
-  if (!req.isAuth) {
-    throw new Error('Not authenticated');
-  }
-  if (!req.file) {
-    return res.status(200).json({ message: 'No file provided' });
-  }
-  if (req.body.oldPath) {
-    clearImage(req.body.oldPath);
-  }
-  const filePath = req.file.path.replace(/\\/g, '/');
-  return res.status(201).json({ message: 'File stored', filePath: filePath })
-});
-
-app.use('/graphql', graphqlHTTP({
-  schema: graphqlSchema,
-  rootValue: graphqlResolver,
-  graphiql: true,
-  formatError(err) {
-    if (!err.originalError) {
-      return err;
-    }
-    const data = err.originalError.data;
-    const message = err.message || 'An error occurred';
-    const code = err.originalError.code || 500;
-    return {
-      message,
-      status: code,
-      data
-    }
-  }
-}));
+app.use('/feed', feedRoutes);
+app.use('/auth', authRoutes);
 
 app.use((error, req, res, next) => {
   console.log(error);
@@ -99,9 +61,9 @@ app.use((error, req, res, next) => {
 
 mongoose
   .connect(
-    'mongodb+srv://savenkov:Cfdtyrjd1993@cluster0.rrnoz.mongodb.net/graphql?retryWrites=true&w=majority'
+    'mongodb+srv://maximilian:9u4biljMQc4jjqbe@cluster0-ntrwp.mongodb.net/messages?retryWrites=true'
   )
   .then(result => {
-   app.listen(8080);
+    app.listen(8080);
   })
   .catch(err => console.log(err));
